@@ -1,6 +1,6 @@
 {
   "name": "@limccn/longstone-surface",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
   "description": "Browser-safe verification surface for MemoryOverEth: chain-derived digests, gateway transport, registry scan and typed errors.",
   "license": "Apache-2.0",

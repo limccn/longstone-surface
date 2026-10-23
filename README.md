@@ -39,3 +39,14 @@ ships ESM plus type declarations with `"sideEffects": false`.
 
 A CID alone is never an on-chain verdict: `verifyByCid` reports
 `not-anchored` because only a commitment hash can prove an on-chain memory.
+
+## Publishing
+
+Publish with **pnpm**, not npm. The `@limccn/menhir-core` dependency is
+declared as `workspace:*` for local development; pnpm rewrites it to the
+published version during `pnpm publish`, while npm writes the literal
+`workspace:*` into the tarball, which makes the package uninstallable.
+
+```bash
+corepack pnpm publish --access public --no-git-checks
+```
