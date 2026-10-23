@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# `@limccn/menhir-core` is a `workspace:*` dependency. CI assembles the same
+# layout the developer checkout uses:
+#   workspace/
+#   ├── pnpm-workspace.yaml
+#   ├── menhir/        (sibling repo; @limccn/menhir-core lives in menhir/ts)
+#   └── surface/       (this repo)
+# Both repos are public; the workflow token can read them.
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout longstone-surface
+        uses: actions/checkout@v4
+        with:
+          path: workspace/surface
+      - name: Checkout menhir (@limccn/menhir-core)
+        uses: actions/checkout@v4
+        with:
+          repository: limccn/menhir
+          token: ${{ secrets.MENHIR_REPO_TOKEN || github.token }}
+          path: workspace/menhir
+      - name: Assemble workspace
+        working-directory: workspace
+        run: |
+          printf 'packages:\n  - "surface"\n  - "menhir/ts"\nallowBuilds:\n  "esbuild": true\n' > pnpm-workspace.yaml
+          printf '{"name":"ci-workspace","private":true,"packageManager":"pnpm@12.11.2"}\n' > package.json
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: workspace/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: pnpm install --no-frozen-lockfile
+        working-directory: workspace
+      - run: pnpm --filter @limccn/menhir-core build
+        working-directory: workspace
+      - run: pnpm --filter @limccn/longstone-surface build
+        working-directory: workspace
+      - run: pnpm --filter @limccn/longstone-surface test
+        working-directory: workspace
+      - run: pnpm --filter @limccn/longstone-surface typecheck
+        working-directory: workspace
+      - run: npm pack --dry-run
+        working-directory: workspace/surface
